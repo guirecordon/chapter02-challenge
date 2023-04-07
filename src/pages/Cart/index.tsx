@@ -1,3 +1,4 @@
+import { privateDecrypt } from 'crypto';
 import { format } from 'path';
 import React from 'react';
 import {
@@ -33,7 +34,7 @@ const Cart = (): JSX.Element => {
   const total =
     formatPrice(
       cart.reduce((sumTotal, product) => {
-        return sumTotal += product.price
+        return sumTotal + (product.amount * product.price)
       }, 0)
     )
 
