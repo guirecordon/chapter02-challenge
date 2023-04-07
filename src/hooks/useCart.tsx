@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import { ProductTable } from '../pages/Cart/styles';
 import { api } from '../services/api';
 import { Product, Stock } from '../types';
 
@@ -32,38 +33,34 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
     return [];
   });
 
-  useEffect(() => {
-    localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart));
-  }, [cart])
-
   const addProduct = async (productId: number) => {
     try {
-      // TODO
-      const stockProduct = await api.get(`/stock/${productId}`).then(response => response.data);
+      const updatedCart = [...cart];
+      const stockAmount = await api.get(`/stock/${productId}`).then(response => response.data);
+      const product = await api.get(`/products/${productId}`).then(response => response.data);
+      const productExists = updatedCart.find(product => product.id === productId);
+      const newAmount = productExists ? (productExists.amount + 1) : 1;
 
-      const product = await api.get(`/products/${productId}`).then(response => response.data)
-
-      const cartAmount = cart.reduce((acc, currVal) => {
-        if(currVal.id === productId) {
-          acc = {
-            ...acc,
-            amount: currVal.amount += 1
-          }
-        }
-
-        return acc
-      }, {amount: 0})
-
-      if(stockProduct.amount > cartAmount.amount) {
-        setCart([
-          ...cart,
-          product
-        ])
-      } else {
-        console.log('Quantidade solicitada fora de estoque');
+      if(newAmount > stockAmount.amount) {
+        toast.error('Quantidade solicitada fora de estoque');
+        return;
       }
+
+      if(productExists) {
+        productExists.amount = newAmount;
+      } else {
+        const newProduct = {
+            ...product,
+            amount: newAmount,
+        }
+        
+        updatedCart.push(newProduct)
+      }
+
+      setCart(updatedCart)
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(updatedCart))
     } catch {
-      // TODO
+      toast.error('Erro na adição do produto');
     }
   };
 
@@ -81,7 +78,8 @@ export function CartProvider({ children }: CartProviderProps): JSX.Element {
   }: UpdateProductAmount) => {
     try {
       // TODO
-
+      localStorage.setItem('@RocketShoes:cart', JSON.stringify(cart))
+      
     } catch {
       // TODO
     }
